@@ -180,7 +180,7 @@ void Task1code( void * pvParameters ){
     }
 
     //send sensor temp (followME)
-    if(millis() - pMillisSetSesonrTemp >= refreshIntSetSesonrTemp){
+    if(airConSwitch && millis() - pMillisSetSesonrTemp >= refreshIntSetSesonrTemp){
       pMillisSetSesonrTemp = millis();
       sendSensorTemp();
     }
@@ -444,7 +444,7 @@ void setAcPower(bool acState) {
 
 //Set Temperature on AC
 void setAcTemp() {
-  ac.setPower(true);
+  ac.setPower(airConSwitch);
   ac.setMode(0);        // 0 = Cool
   ac.setFan(1);         // 1 = Low fan
   if(setTemp >= 86){
@@ -487,7 +487,9 @@ void awayMood(){
     ac.setFan(1);         // 1 = Low fan
     ac.setTemp(86);       // Set temp to 86
     ac.send();
-    delay(20);           // Retry with good delay
+    delay(20);           // Retry with delay
+    ac.send();
+    delay(20);           // Retry with delay
     ac.send();
     awayMoodON = true;
     Serial.println("Turning On Away Mood");
@@ -497,7 +499,9 @@ void awayMood(){
     ac.setFan(1);         // 1 = Low fan
     ac.setTemp(86);       // Set temp to 86
     ac.send();
-    delay(20);           // Retry with good delay
+    delay(20);           // Retry with delay
+    ac.send();
+    delay(20);           // Retry with delay
     ac.send();
     awayMoodON = false;
     Serial.println("Turning OFF Away Mood");
