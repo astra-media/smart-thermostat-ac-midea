@@ -437,7 +437,9 @@ void setAcPower(bool acState) {
     ac.setTemp(setTemp);
   }
   ac.send();
-  delay(20);           // Retry with good delay
+  delay(100);           // Retry with good delay
+  ac.send();
+  delay(100);           // Retry with good delay
   ac.send();
   Serial.println("Updating AC Power State");
 }
@@ -453,7 +455,7 @@ void setAcTemp() {
     ac.setTemp(setTemp);
   }
   ac.send();
-  delay(20);           // Retry with good delay
+  delay(100);           // Retry with good delay
   ac.send();
 
   Serial.println("Setting AC Temp");
@@ -487,9 +489,9 @@ void awayMood(){
     ac.setFan(1);         // 1 = Low fan
     ac.setTemp(86);       // Set temp to 86
     ac.send();
-    delay(20);           // Retry with delay
+    delay(100);           // Retry with delay
     ac.send();
-    delay(20);           // Retry with delay
+    delay(100);           // Retry with delay
     ac.send();
     awayMoodON = true;
     Serial.println("Turning On Away Mood");
@@ -499,9 +501,9 @@ void awayMood(){
     ac.setFan(1);         // 1 = Low fan
     ac.setTemp(86);       // Set temp to 86
     ac.send();
-    delay(20);           // Retry with delay
+    delay(100);           // Retry with delay
     ac.send();
-    delay(20);           // Retry with delay
+    delay(100);           // Retry with delay
     ac.send();
     awayMoodON = false;
     Serial.println("Turning OFF Away Mood");
