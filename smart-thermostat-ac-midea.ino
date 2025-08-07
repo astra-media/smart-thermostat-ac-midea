@@ -422,7 +422,11 @@ void setLCD () {
 void updateACState(){
   if(sendIrforAcPower){
     setAcPower(airConSwitch);
-    delay(500);
+    if(airConSwitch){
+      delay(1000);
+      sendSensorTemp();
+      delay(1000);
+    }
     sendIrforAcPower = false;
   } else if (sendIrforAcTemp){
     setAcTemp();
@@ -482,6 +486,10 @@ void sendSensorTemp(){
 
   ac.setSensorTemp(getTemp);
   ac.send();
+  delay(acSendDelay);           // Retry with good delay
+  ac.send();
+  delay(acSendDelay);           // Retry with good delay
+  ac.send();
   ac.setEnableSensorTemp(false);
   Serial.print("Sending sensor temp: ");
   Serial.println(getTemp);
@@ -494,7 +502,7 @@ void awayMood(){
     ac.setPower(true);
     ac.setMode(0);        // 0 = Cool
     ac.setFan(1);         // 1 = Low fan
-    ac.setTemp(86);       // Set temp to 86
+    ac.setTemp(80);       // Set temp to 80
     ac.send();
     delay(acSendDelay);           // Retry with delay
     ac.send();
@@ -502,11 +510,11 @@ void awayMood(){
     ac.send();
     awayMoodON = true;
     Serial.println("Turning On Away Mood");
-  } else if ((getTemp <= (maxTemp - 4)) && awayMoodON){
+  } else if ((getTemp <= (maxTemp - 5)) && awayMoodON){
     ac.setPower(false);
     ac.setMode(0);        // 0 = Cool
     ac.setFan(1);         // 1 = Low fan
-    ac.setTemp(86);       // Set temp to 86
+    ac.setTemp(80);       // Set temp to 80
     ac.send();
     delay(acSendDelay);           // Retry with delay
     ac.send();
