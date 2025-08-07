@@ -100,6 +100,9 @@ bool awayMoodON = false;
 int maxTemp = 95;
 
 
+int acSendDelay = 25;
+
+
 void setup() {
   // Defined in thingProperties.h
   initProperties();
@@ -419,9 +422,11 @@ void setLCD () {
 void updateACState(){
   if(sendIrforAcPower){
     setAcPower(airConSwitch);
+    delay(500);
     sendIrforAcPower = false;
   } else if (sendIrforAcTemp){
     setAcTemp();
+    delay(500);
     sendIrforAcTemp = false;
   }
 }
@@ -437,9 +442,9 @@ void setAcPower(bool acState) {
     ac.setTemp(setTemp);
   }
   ac.send();
-  delay(100);           // Retry with good delay
+  delay(acSendDelay);           // Retry with good delay
   ac.send();
-  delay(100);           // Retry with good delay
+  delay(acSendDelay);           // Retry with good delay
   ac.send();
   Serial.println("Updating AC Power State");
 }
@@ -455,7 +460,9 @@ void setAcTemp() {
     ac.setTemp(setTemp);
   }
   ac.send();
-  delay(100);           // Retry with good delay
+  delay(acSendDelay);           // Retry with good delay
+  ac.send();
+  delay(acSendDelay);           // Retry with good delay
   ac.send();
 
   Serial.println("Setting AC Temp");
@@ -489,9 +496,9 @@ void awayMood(){
     ac.setFan(1);         // 1 = Low fan
     ac.setTemp(86);       // Set temp to 86
     ac.send();
-    delay(100);           // Retry with delay
+    delay(acSendDelay);           // Retry with delay
     ac.send();
-    delay(100);           // Retry with delay
+    delay(acSendDelay);           // Retry with delay
     ac.send();
     awayMoodON = true;
     Serial.println("Turning On Away Mood");
@@ -501,9 +508,9 @@ void awayMood(){
     ac.setFan(1);         // 1 = Low fan
     ac.setTemp(86);       // Set temp to 86
     ac.send();
-    delay(100);           // Retry with delay
+    delay(acSendDelay);           // Retry with delay
     ac.send();
-    delay(100);           // Retry with delay
+    delay(acSendDelay);           // Retry with delay
     ac.send();
     awayMoodON = false;
     Serial.println("Turning OFF Away Mood");
