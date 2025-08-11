@@ -541,9 +541,9 @@ void awayMood(){
     awayMoodON = false;
     Serial.println("Triggered Shutdown Timer");
     if(setTemp >= 86){
-      sendSensorTemp(86, true);
+      sendSensorTemp(85, true);
     } else {
-      sendSensorTemp(setTemp, true);
+      sendSensorTemp((setTemp - 1), true);
     }
     delay(1000);
   }
@@ -555,9 +555,9 @@ void awayMoodShutDown(){
     if(millis() - pMillisSetSesonrTemp >= refreshIntSetSesonrTemp){
       pMillisSetSesonrTemp = millis();
       if(setTemp >= 86){
-        sendSensorTemp(86, true);
+        sendSensorTemp(85, true);
       } else {
-        sendSensorTemp(setTemp, true);
+        sendSensorTemp((setTemp - 1), true);
       }
     }
 
