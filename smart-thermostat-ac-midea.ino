@@ -89,7 +89,7 @@ const long refreshIntervalForTempSensor = 2000; // time between temperature refr
 bool sendIrforAcPower = false;
 bool sendIrforAcTemp = false;
 
-//millis for for setSesonrTemp (FollowME)
+//millis for setSesonrTemp (FollowME)
 unsigned long pMillisSetSesonrTemp = 0;
 const long refreshIntSetSesonrTemp = 120000; //2 minutes: time between setSesonrTemp (followMe)
 
@@ -97,7 +97,15 @@ const long refreshIntSetSesonrTemp = 120000; //2 minutes: time between setSesonr
 //Away Mood setting
 bool awayMoodActive = false;
 bool awayMoodON = false;
-int maxTemp = 95;
+int maxTemp = 95; //In Fahrenheit
+int minTemp = 5;  //deducts this value from setTemp
+bool awayMoodSetTemp = false;
+
+
+//millis and shutdown sequence
+unsigned long milShutDownStart = 0;
+const long shutDownTime = 300000; //5 minutes: time to shut down
+bool shutDownTimer = false;
 
 
 int acSendDelay = 25;
@@ -170,22 +178,43 @@ void Task1code( void * pvParameters ){
       updateACState();
       getTempfromDHT();
 
-      if (!airConSwitch && setTemp <= (maxTemp + 5) && setTemp >= (maxTemp - 5)){
-        awayMood();
-        awayMoodActive = true;
-      } else {
-        awayMoodActive = false;
-      }
-
       if(ArduinoCloud.connected() == 1){
         temperature = getTemp;
+      }
+
+      //AWAY MOOD
+      if (!airConSwitch && setTemp <= (maxTemp + 5) && setTemp >= (maxTemp - 5)){
+        awayMoodActive = true;
+        if(!awayMoodSetTemp){
+          setTemp = maxTemp;
+          thermostat = setTemp;
+          awayMoodSetTemp = true;
+        }
+      } else if (airConSwitch || setTemp <= 84){
+        awayMoodActive = false;
+        awayMoodSetTemp = false;
+        shutDownTimer = false;
+      }
+
+      if (awayMoodActive){
+        awayMood();
+        if(shutDownTimer){
+          awayMoodShutDown();
+        }
       }
     }
 
     //send sensor temp (followME)
     if(airConSwitch && millis() - pMillisSetSesonrTemp >= refreshIntSetSesonrTemp){
       pMillisSetSesonrTemp = millis();
-      sendSensorTemp();
+      sendSensorTemp(getTemp, airConSwitch);
+    }
+
+
+    //AWAY mood: send sensor temp (followME)
+    if(awayMoodON && millis() - pMillisSetSesonrTemp >= refreshIntSetSesonrTemp){
+      pMillisSetSesonrTemp = millis();
+      sendSensorTemp(getTemp, true);
     }
 
     delay(1000);
@@ -424,7 +453,7 @@ void updateACState(){
     setAcPower(airConSwitch);
     if(airConSwitch){
       delay(1000);
-      sendSensorTemp();
+      sendSensorTemp(getTemp, airConSwitch);
       delay(1000);
     }
     sendIrforAcPower = false;
@@ -473,9 +502,9 @@ void setAcTemp() {
 }
 
 //Send Sensor Temp (FollowMe)
-void sendSensorTemp(){
+void sendSensorTemp(int currentTemp, bool acState){
   ac.setEnableSensorTemp(true);
-  ac.setPower(airConSwitch);
+  ac.setPower(acState);
   ac.setMode(0);        // 0 = Cool
   ac.setFan(1);         // 1 = Low fan
   if(setTemp >= 86){
@@ -484,7 +513,7 @@ void sendSensorTemp(){
     ac.setTemp(setTemp);
   }
 
-  ac.setSensorTemp(getTemp);
+  ac.setSensorTemp(currentTemp);
   ac.send();
   delay(acSendDelay);           // Retry with good delay
   ac.send();
@@ -492,35 +521,50 @@ void sendSensorTemp(){
   ac.send();
   ac.setEnableSensorTemp(false);
   Serial.print("Sending sensor temp: ");
-  Serial.println(getTemp);
+  Serial.println(currentTemp);
 }
 
 
 //Away Mood
 void awayMood(){
-  if((getTemp >= maxTemp) && !awayMoodON){
-    ac.setPower(true);
-    ac.setMode(0);        // 0 = Cool
-    ac.setFan(1);         // 1 = Low fan
-    ac.setTemp(80);       // Set temp to 80
-    ac.send();
-    delay(acSendDelay);           // Retry with delay
-    ac.send();
-    delay(acSendDelay);           // Retry with delay
-    ac.send();
+  if((getTemp >= setTemp) && !awayMoodON){
+    setAcPower(true);
     awayMoodON = true;
+    shutDownTimer = false;
     Serial.println("Turning On Away Mood");
-  } else if ((getTemp <= (maxTemp - 5)) && awayMoodON){
-    ac.setPower(false);
-    ac.setMode(0);        // 0 = Cool
-    ac.setFan(1);         // 1 = Low fan
-    ac.setTemp(80);       // Set temp to 80
-    ac.send();
-    delay(acSendDelay);           // Retry with delay
-    ac.send();
-    delay(acSendDelay);           // Retry with delay
-    ac.send();
+    delay(1000);
+    sendSensorTemp(getTemp, true);
+    delay(1000);
+  } else if ((getTemp <= (setTemp - minTemp)) && awayMoodON){
+    shutDownTimer = true;
+    milShutDownStart = millis();
     awayMoodON = false;
-    Serial.println("Turning OFF Away Mood");
+    Serial.println("Triggered Shutdown Timer");
+    if(setTemp >= 86){
+      sendSensorTemp(86, true);
+    } else {
+      sendSensorTemp(setTemp, true);
+    }
+    delay(1000);
   }
+}
+
+
+//Shutdown timer
+void awayMoodShutDown(){
+    if(millis() - pMillisSetSesonrTemp >= refreshIntSetSesonrTemp){
+      pMillisSetSesonrTemp = millis();
+      if(setTemp >= 86){
+        sendSensorTemp(86, true);
+      } else {
+        sendSensorTemp(setTemp, true);
+      }
+    }
+
+    if(millis() - milShutDownStart >= shutDownTime){
+      setAcPower(false);
+      shutDownTimer = false;
+
+      Serial.println("Turning OFF Away Mood");
+    }
 }
