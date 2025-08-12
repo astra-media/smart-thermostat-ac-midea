@@ -187,7 +187,9 @@ void Task1code( void * pvParameters ){
         awayMoodActive = true;
         if(!awayMoodSetTemp){
           setTemp = maxTemp;
-          thermostat = setTemp;
+          if (ArduinoCloud.connected() == 1) {
+            thermostat = setTemp;
+          }          
           awayMoodSetTemp = true;
         }
       } else if (airConSwitch || setTemp <= 84){
